@@ -37,7 +37,11 @@ class AtlasI2C:
     def write(self, cmd):
         # appends the null character and sends the string over I2C
         cmd += "\00"
-        self.file_write.write(cmd)
+        try:
+            self.file_write.write(cmd)
+        except Exception as e:
+            print(str(e))
+
 
     def read(self, num_of_bytes=31):
         # reads a specified number of bytes from I2C, then parses and displays the result
@@ -47,7 +51,7 @@ class AtlasI2C:
             # change MSB to 0 for all received characters except the first and get a list of characters
             char_list = map(lambda x: chr(ord(x) & ~0x80), list(response[1:]))
             # NOTE: having to change the MSB to 0 is a glitch in the raspberry pi, and you shouldn't have to do this!
-            return "Command succeeded " + ''.join(char_list)     # convert the char list to a string and returns it
+            return ''.join(char_list)     # convert the char list to a string and returns it
         else:
             return "Error " + str(ord(response[0]))
 
@@ -73,14 +77,22 @@ class AtlasI2C:
 
 def parse_args():
     parser = argparse.ArgumentParser(description='An adapted script to output PH reading of an Atlas Scientific sensor')
-    parser.add_argument('-a','--address', help='Address of the i2c device', required=True)
+    parser.add_argument('-a','--address', type=int, help='Address of the i2c device', required=True)
     return parser.parse_args()
+
+
+def get_readout(device):
+    return device.query("R")
 
 
 def main():
     args = parse_args()
-    device = AtlasI2C(address=args.address) 	# creates the I2C port object, specify the address or bus if necessary
-    print(device.query("R"))
+    device = AtlasI2C(address=args.address) # creates the I2C port object, specify the address or bus if necessary
+    try:
+        print(get_readout(device))
+    except:
+        time.sleep(3)
+        print(get_readout(device))
 
 
 if __name__ == '__main__':
