@@ -1,25 +1,25 @@
 #!/usr/bin/python
 
-import io         # used to create file streams
-import fcntl      # used to access I2C parameters like addresses
+import io
+import fcntl
 
-import time       # used for sleep delay and timestamps
-import string     # helps parse strings
+import time
+import string
 import argparse
+
+import ../temperature/ds18b20_sensor
 
 
 class AtlasI2C:
-    long_timeout = 1.5         	# the timeout needed to query readings and calibrations
-    short_timeout = .5         	# timeout for regular commands
-    default_bus = 1         	# the default bus for I2C on the newer Raspberry Pis, certain older boards use bus 0
-#    default_address = 63
-    default_address = 99     	# the default address for the sensor
+    long_timeout = 1.5
+    short_timeout = .5
+    default_bus = 1
+    default_address = 100
 
     def __init__(self, address=default_address, bus=default_bus):
         # open two file streams, one for reading and one for writing
         # the specific I2C channel is selected with bus
         # it is usually 1, except for older revisions where its 0
-        # wb and rb indicate binary read and write
         self.file_read = io.open("/dev/i2c-"+str(bus), "rb", buffering=0)
         self.file_write = io.open("/dev/i2c-"+str(bus), "wb", buffering=0)
 
@@ -27,9 +27,6 @@ class AtlasI2C:
         self.set_i2c_address(address)
 
     def set_i2c_address(self, addr):
-        # set the I2C communications to the slave specified by the address
-        # The commands for I2C dev using the ioctl functions are specified in
-        # the i2c-dev.h file from i2c-tools
         I2C_SLAVE = 0x703
         fcntl.ioctl(self.file_read, I2C_SLAVE, addr)
         fcntl.ioctl(self.file_write, I2C_SLAVE, addr)
@@ -77,7 +74,8 @@ class AtlasI2C:
 
 def parse_args():
     parser = argparse.ArgumentParser(description='An adapted script to output PH reading of an Atlas Scientific sensor')
-    parser.add_argument('-a','--address', type=int, help='Address of the i2c device', required=True)
+    parser.add_argument('-a','--ph_address', type=int, help='Address of the i2c device', required=True)
+    parser.add_argument('-t','--temperature_address', type=int, help='Address of the ds18b20 device')
     return parser.parse_args()
 
 
@@ -87,8 +85,10 @@ def get_readout(device):
 
 def main():
     args = parse_args()
-    device = AtlasI2C(address=args.address) # creates the I2C port object, specify the address or bus if necessary
+    device = AtlasI2C(address=args.ph_address) # creates the I2C port object, specify the address or bus if necessary
     try:
+        # get temp from module
+        # set temp
         print(get_readout(device))
     except:
         time.sleep(3)
