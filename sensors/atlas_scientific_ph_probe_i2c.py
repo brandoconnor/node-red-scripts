@@ -7,7 +7,7 @@ import time
 import string
 import argparse
 
-import ../temperature/ds18b20_sensor
+import ds18b20_sensor
 
 
 class AtlasI2C:
@@ -75,7 +75,7 @@ class AtlasI2C:
 def parse_args():
     parser = argparse.ArgumentParser(description='An adapted script to output PH reading of an Atlas Scientific sensor')
     parser.add_argument('-a','--ph_address', type=int, help='Address of the i2c device', required=True)
-    parser.add_argument('-t','--temperature_address', type=int, help='Address of the ds18b20 device')
+    parser.add_argument('-t','--temperature_sensor_id', help='Address of the ds18b20 device. e.g. 28-021503ca1aff')
     return parser.parse_args()
 
 
@@ -88,6 +88,9 @@ def main():
     device = AtlasI2C(address=args.ph_address) # creates the I2C port object, specify the address or bus if necessary
     try:
         # get temp from module
+        if args.temperature_address:
+            temperature = ds18b20_sensor.get_temperature(sensor_id=args.temperature_sensor_id)
+            print(device.query("T," + temperature))
         # set temp
         print(get_readout(device))
     except:
